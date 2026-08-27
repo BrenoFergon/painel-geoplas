@@ -169,13 +169,17 @@ async function main() {
 
   const usedAds = [...new Set(daily.map(r => r.a))];
 
-  // capas dos criativos → thumbs/<ad_id>.jpg (pula as que já existem)
+  // capas dos criativos → thumbs/<ad_id>.jpg
+  // O data.json semeado trouxe capas de 160px (limite do que dá para pegar sem token).
+  // Na primeira rodada com token, `thumbs_lowres` força a troca por 400px.
+  const prevSeed = existsSync(OUT) ? JSON.parse(readFileSync(OUT, "utf8")) : null;
+  const forceThumbs = prevSeed?.meta?.thumbs_lowres === true;
   mkdirSync(THUMBDIR, { recursive: true });
   const imgMap = {};
   let baixadas = 0;
   for (const adId of usedAds) {
     const file = join(THUMBDIR, adId + ".jpg"), rel = "thumbs/" + adId + ".jpg";
-    if (existsSync(file)) { imgMap[adId] = rel; continue; }
+    if (existsSync(file) && !forceThumbs) { imgMap[adId] = rel; continue; }
     const cid = adById[adId]?.creative?.id;
     if (!cid) continue;
     try {
@@ -186,6 +190,8 @@ async function main() {
       writeFileSync(file, Buffer.from(await ir.arrayBuffer()));
       imgMap[adId] = rel; baixadas++;
     } catch { /* segue sem capa */ }
+    // se a troca falhou mas já existe uma capa em disco, mantém a antiga
+    if (!imgMap[adId] && existsSync(file)) imgMap[adId] = rel;
   }
 
   const ads = usedAds.map(id => {
@@ -215,7 +221,6 @@ async function main() {
   });
 
   const dates = daily.map(r => r.d);
-  const prev = existsSync(OUT) ? JSON.parse(readFileSync(OUT, "utf8")) : null;
 
   const data = {
     meta: {
@@ -229,7 +234,7 @@ async function main() {
       seed: false,
       first_date: dates[0],
       last_date: dates[dates.length - 1],
-      default_period: prev?.meta?.default_period || "last_30d",
+      default_period: prevSeed?.meta?.default_period || "last_30d",
     },
     campaigns, ads, daily,
   };

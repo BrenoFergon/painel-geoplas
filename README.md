@@ -79,7 +79,8 @@ Em ~1 min o painel fica no ar em `https://<usuario>.github.io/<repo>/`.
 
 - **1.632 linhas** diárias por anúncio · **16 anúncios** · **23/01/2026 → 27/08/2026**
 - No seed, as métricas do funil de mensagens (C3) foram derivadas de `custo por ação` (`contagem = gasto ÷ custo`, que é exatamente como a Meta calcula). Na primeira execução do Actions elas passam a vir como contagem direta da API.
-- As **capas dos criativos** só aparecem depois da primeira execução do Actions (o ranking usa o código do anúncio como marcador até lá).
+- As **capas dos criativos** já vêm no repositório (`thumbs/<ad_id>.jpg`), puxadas do frame de vídeo que a Meta expõe. São de **160 px** — o maior tamanho acessível sem token, porque as URLs do CDN são assinadas junto com o recorte. O `data.json` carrega a marca `thumbs_lowres: true`; na primeira execução do Actions o script ignora as capas existentes e baixa tudo de novo em 400 px, limpando a marca.
+- Alguns vídeos começam num quadro escuro, então três capas saem quase pretas (AD07-Abastecimento-Industrial, AD03-WagnerBoaz, AD01-Cliente-Boaz). É o frame real que a Meta devolve; a rodada com token pode trazer o quadro preferido, que costuma ser melhor.
 
 ## Ajustes rápidos
 
