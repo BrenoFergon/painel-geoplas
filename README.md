@@ -23,13 +23,19 @@ O HTML é 100% estático — nenhum servidor, nenhuma chave exposta no navegador
 | **C2** · `CBO-Reconhecimento-A-Visualização-Vídeo-Filiais` | **Pessoas que viram 50%+ do vídeo** e custo por visualização | ThruPlay e custo por ThruPlay, reproduções, % que chegou a 50 / 75 / 100% |
 | **C3** · `CBO-Vendas-Quente-A-Depoimentos` | **Conversas iniciadas** e custo por conversa | conexões de mensagem, saudação vista, primeira resposta, responderam em 7 dias, trocaram 3+ e 5+ mensagens |
 
-Em todas as campanhas, **CPM, CTR, CPC e frequência** aparecem numa faixa discreta no rodapé do card — são diagnóstico, não meta.
+Em todas as abas, **CPM, CTR, CPC e frequência** ficam num painel discreto chamado *Diagnóstico de entrega* — servem para explicar o custo, não são a meta.
 
-Cada campanha traz o **ranking de criativos**, ordenado do mais barato ao mais caro **no objetivo daquela campanha** (não no CTR), com selo `Melhor` / `Pior` e um comentário automático de realocação de verba. Criativos com menos de R$20 investidos no período recebem o selo `verba baixa` e ficam fora da comparação — pouco dado ainda não é sinal.
+Cada campanha traz o **ranking de criativos**, ordenado do mais barato ao mais caro **no objetivo daquela campanha** (não no CTR), com selo `★ melhor` / `pior` e um comentário automático de realocação de verba. Criativos com menos de R$20 investidos no período recebem o selo `verba baixa` e ficam fora da comparação — pouco dado ainda não é sinal.
+
+## Navegação e visual
+
+Mesmo sistema de design do [painel Ricardo Mello](https://corvoassessoriatm.github.io/painel-ricardo-mello/): papel quente e ouro no claro, tinta no escuro, com **botão de tema** no topo (a escolha fica salva no navegador). Tipografia Fraunces nos títulos, Hanken Grotesk no texto e IBM Plex Mono nos números.
+
+O painel tem **quatro abas**: *Visão geral* e uma por campanha. Cada aba de campanha traz o hero com o objetivo, oito KPIs, o **funil** daquela campanha (crescimento em C1, retenção de vídeo em C2, conversa em C3), a tendência diária e o ranking de criativos em tabela ou galeria. Os `?` ao lado dos rótulos explicam cada métrica em linguagem de cliente.
 
 ## Filtro de período
 
-- **Atalhos:** último dia, 7, 30, 90 dias, este mês, mês passado, tudo.
+- **Atalhos:** último dia, 7, 30, 90 dias, este mês, tudo.
 - **Data livre:** os dois campos de data no canto direito aceitam qualquer intervalo dentro do histórico disponível. Tudo na página (KPIs, gráfico, cards e ranking de criativos) é recalculado para o intervalo escolhido.
 
 O recorte é feito no navegador a partir das linhas diárias por anúncio guardadas em `data.json` — por isso qualquer intervalo funciona, sem ida à API.
