@@ -253,6 +253,9 @@
 <style id="geo">
   /* ===== Geoplas — complementos sobre o mesmo sistema ===== */
 
+  /* grade de KPIs se adapta a quantas campanhas o cliente tem */
+  .kpis{grid-template-columns:repeat(auto-fit,minmax(148px,1fr))}
+
   .fgroup{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
 
   /* filtro de data livre */
@@ -484,11 +487,20 @@ function setCustom(){
 function heroHTML(A){
   const t = A.total, nd = A.series.length;
   if (state.tab === "geral"){
-    const seg = t.fol, vid = t.p50, cv = t.conv;
+    const live = DATA.campaigns.filter(c => A.byCamp[c.id] && A.byCamp[c.id].s > 0);
     let ttl = "Sem veiculação no período selecionado", nt = "Escolha outro intervalo ou clique em Tudo.";
     if (t.s > 0){
-      ttl = "Três frentes rodando: base, alcance e conversa";
-      nt = `A C1 trouxe <b>${NUM(seg)}</b> ${plural("seguidor", seg)}, a C2 fez <b>${NUM(vid)}</b> ${plural("pessoa", vid)} assistirem metade ou mais do vídeo, e a C3 abriu <b>${NUM(cv)}</b> ${plural("conversa", cv)}. Abra cada aba para o detalhe e o ranking de criativos.`;
+      const TITULO = { 1:"Uma frente ativa no período", 2:"Duas frentes rodando em paralelo",
+                       3:"Três frentes rodando: base, alcance e conversa" };
+      ttl = TITULO[live.length] || `${live.length} campanhas ativas no período`;
+      const frases = live.map(c => {
+        const a = A.byCamp[c.id], v = a[c.kpi] || 0;
+        return `a <b>${esc(c.tag)}</b> entregou <b>${NUM(v)}</b> ${esc(plural(c.kpi_unit, v))} a ${uCost(a.s, v)} cada`;
+      });
+      const lista = frases.length > 1
+        ? frases.slice(0, -1).join(", ") + " e " + frases[frases.length - 1]
+        : frases[0];
+      nt = `No período, ${lista}. Abra cada aba para o funil e o ranking de criativos.`;
     }
     return `<div class="obj"><div>
       <div class="eye">Visão consolidada · ${DATA.campaigns.length} campanhas · ${nd} ${nd===1?"dia":"dias"} com veiculação</div>
@@ -521,26 +533,43 @@ function kpisHTML(A){
   const t = A.total;
   let cards;
   if (state.tab === "geral"){
+    const HK = { fol:"seguidores", p50:"p50", conv:"conversas", tp:"thruplay", res:"visitas", lc:"linkclick" };
+    const porCampanha = DATA.campaigns
+      .filter(c => A.byCamp[c.id] && A.byCamp[c.id].s > 0)
+      .map(c => {
+        const a = A.byCamp[c.id], v = a[c.kpi] || 0;
+        return { k:c.kpi_label, v:NUM(v), s:uCost(a.s, v) + " cada · " + esc(c.tag), hk:HK[c.kpi] };
+      });
+    /* com poucas campanhas sobra espaço: completa com a métrica secundária de cada uma */
+    const extras = porCampanha.length < 3
+      ? DATA.campaigns.filter(c => A.byCamp[c.id] && A.byCamp[c.id].s > 0).map(c => {
+          const a = A.byCamp[c.id], v = a[c.kpi2] || 0;
+          return { k:c.kpi2_label, v:NUM(v), s:uCost(a.s, v) + " cada · " + esc(c.tag), hk:HK[c.kpi2] };
+        })
+      : [];
     cards = [
       { k:"Investimento", v:BRL0(t.s), s:`${A.series.length} dias · ${BRL(t.s/Math.max(A.series.length,1))}/dia` },
-      { k:"Seguidores",   v:NUM(t.fol),  s:uCost(t.s, t.fol) + " cada", hk:"seguidores" },
-      { k:"Viram 50%+",   v:NUM(t.p50),  s:uCost(t.s, t.p50) + " cada", hk:"p50" },
-      { k:"Conversas",    v:NUM(t.conv), s:uCost(t.s, t.conv) + " cada", hk:"conversas" },
-      { k:"Alcance",      v:NUM(t.rc),   s:NUM(t.i) + " impr.", hk:"alcance" },
-      { k:"CTR",          v:PCT(t.ctr),  s:NUM(t.ck) + " cliques", hk:"ctr" },
-      { k:"CPC",          v:t.cpc===null?"—":BRL(t.cpc), s:"por clique", hk:"cpc" },
-      { k:"CPM",          v:BRL(t.cpm),  s:"por mil impr.", hk:"cpm" },
+      ...porCampanha, ...extras,
+      { k:"Alcance", v:NUM(t.rc),  s:NUM(t.i) + " impr.", hk:"alcance" },
+      { k:"CTR",     v:PCT(t.ctr), s:NUM(t.ck) + " cliques", hk:"ctr" },
+      { k:"CPC",     v:t.cpc===null?"—":BRL(t.cpc), s:"por clique", hk:"cpc" },
+      { k:"CPM",     v:BRL(t.cpm), s:"por mil impr.", hk:"cpm" },
     ];
   } else {
     const c = DATA.campaigns.find(x => x.id === state.tab);
-    const main = { k:c.kpi_label, v:NUM(t[c.kpi]||0), s:uCost(t.s, t[c.kpi]||0) + " cada", hk:
-      c.key==="C1"?"seguidores":c.key==="C2"?"p50":"conversas" };
-    const second = c.key==="C1" ? { k:"Visitas ao perfil", v:NUM(t.res), s:uCost(t.s,t.res)+" cada", hk:"visitas" }
-                 : c.key==="C2" ? { k:"ThruPlay", v:NUM(t.tp), s:uCost(t.s,t.tp)+" cada", hk:"thruplay" }
-                 :                { k:"Conexões de msg.", v:NUM(t.conn), s:uCost(t.s,t.conn)+" cada", hk:"conexoes" };
-    const third = c.key==="C1" ? { k:"Cliques no link", v:NUM(t.lc), s:uCost(t.s,t.lc)+" cada", hk:"linkclick" }
-                : c.key==="C2" ? { k:"Assistiram 100%", v:NUM(t.p100), s:t.pl?PCT(t.p100/t.pl*100)+" das reprod.":"—" }
-                :                { k:"1ª resposta", v:NUM(t.repl), s:uCost(t.s,t.repl)+" cada", hk:"resposta" };
+    const HK = { fol:"seguidores", p50:"p50", conv:"conversas", tp:"thruplay", res:"visitas", lc:"linkclick", conn:"conexoes", repl:"resposta" };
+    const card = (label, key) => ({ k:label, v:NUM(t[key]||0), s:uCost(t.s, t[key]||0) + " cada", hk:HK[key] });
+    const main   = card(c.kpi_label, c.kpi);
+    const second = card(c.kpi2_label, c.kpi2);
+    /* terceira métrica: extra por tipo de campanha, evitando repetir as duas de cima */
+    const usados = new Set([c.kpi, c.kpi2]);
+    const cand = c.key === "C2"
+      ? [["Assistiram 100%","p100"], ["Viram 75%","p75"], ["Reproduções","pl"]]
+      : c.key === "C3"
+      ? [["1ª resposta","repl"], ["Conexões de msg.","conn"], ["Saudação vista","welc"]]
+      : [["Cliques no link","lc"], ["Visitas ao perfil","res"], ["Seguidores","fol"]];
+    const pick3 = cand.find(([, k]) => !usados.has(k)) || cand[0];
+    const third = card(pick3[0], pick3[1]);
     cards = [
       { k:"Investimento", v:BRL0(t.s), s:`${A.series.length} dias veiculando` },
       main, second, third,
@@ -799,7 +828,8 @@ function diagHTML(A){
 function notesHTML(){
   return `<div class="notes">
     <div class="row"><span>▸</span><div><b>Alcance é soma dos dias.</b> Quem viu o anúncio em dias diferentes é contado mais de uma vez, então o número é maior que o total de pessoas únicas. Por isso a frequência aparece como <b>diária</b>. Investimento, impressões, cliques e resultados são exatos.</div></div>
-    <div class="row"><span>▸</span><div><b>Cada campanha é julgada pelo próprio objetivo.</b> C1 por seguidor, C2 por visualização de 50%, C3 por conversa iniciada — nunca por CTR.</div></div>
+    <div class="row"><span>▸</span><div><b>Cada campanha é julgada pelo próprio objetivo:</b> ${
+      DATA.campaigns.map(c => esc(c.tag) + " por " + esc(c.kpi_unit)).join(", ")} — nunca por CTR.</div></div>
     <div class="row"><span>▸</span><div><b>Criativo com menos de R$20 no período fica fora da comparação</b> melhor/pior. Pouco dado ainda não é sinal.</div></div>
     <div class="row"><span>▸</span><div><b>Fonte:</b> Meta Marketing API, conta <b id="accNote">—</b>. Os dados vêm de linhas diárias por anúncio, por isso qualquer intervalo de datas pode ser recortado sem nova consulta.</div></div>
   </div>`;
@@ -813,7 +843,7 @@ function render(){
   const nd = A.series.length;
   const scopeC = DATA.campaigns.find(c => c.id === state.tab);
   document.getElementById("rangenote").innerHTML =
-    `Exibindo <b>${brD(state.from)}</b> até <b>${brD(state.to)}</b> · <b>${nd}</b> ${nd===1?"dia":"dias"} com veiculação · <b>${BRL(A.total.s)}</b> investidos ${scopeC?"em <b>"+esc(scopeC.tag)+"</b>":"nas 3 campanhas"}${state.preset===null?" · <b>intervalo personalizado</b>":""}`;
+    `Exibindo <b>${brD(state.from)}</b> até <b>${brD(state.to)}</b> · <b>${nd}</b> ${nd===1?"dia":"dias"} com veiculação · <b>${BRL(A.total.s)}</b> investidos ${scopeC?"em <b>"+esc(scopeC.tag)+"</b>":(DATA.campaigns.length===1?"na campanha":"nas "+DATA.campaigns.length+" campanhas")}${state.preset===null?" · <b>intervalo personalizado</b>":""}`;
 
   if (!A.scoped.length){
     document.getElementById("app").innerHTML = heroHTML(A) +
